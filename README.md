@@ -1,6 +1,6 @@
 # ytdown
 
-A local YouTube downloader UI for saving videos or playlists as MP4, or audio as MP3.
+A local YouTube and YouTube Music downloader UI for saving videos, songs, or playlists as MP4, or audio as MP3.
 
 Only download content that you own, created, or have permission to save.
 
@@ -37,6 +37,7 @@ The default output folder is `downloads` inside this project. You can also enter
 
 ## Notes
 
+- YouTube Music song and playlist links are supported, including `music.youtube.com/watch` and `music.youtube.com/playlist`.
 - MP4 downloads use the best MP4 video and M4A audio that YouTube exposes, then merge to MP4.
-- MP3 downloads use `yt-dlp` with FFmpeg. The `imageio-ffmpeg` package supplies an FFmpeg binary if one is not already installed on PATH.
-- Playlist mode asks `yt-dlp` to download every item in the playlist URL. Leave it off for a single video from a playlist page.
+- MP3 downloads use `yt-dlp` with FFmpeg and embeds available metadata. The `imageio-ffmpeg` package supplies an FFmpeg binary if one is not already installed on PATH.
+- Playlist mode asks `yt-dlp` to download every item in the playlist URL. Direct playlist links are detected automatically; leave playlist mode off for a single song or video from a playlist page.

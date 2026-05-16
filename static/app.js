@@ -4,10 +4,13 @@ const template = document.querySelector("#job-template");
 const refreshButton = document.querySelector("#refresh");
 const shutdownButton = document.querySelector("#shutdown");
 const healthEl = document.querySelector("#health");
+const urlInput = document.querySelector("#url");
+const playlistInput = document.querySelector("#playlist");
 const outputDirInput = document.querySelector("#output-dir");
 const submitButton = form.querySelector("button[type='submit']");
 
 let pollTimer = null;
+let playlistTouched = false;
 
 function prettyDate(seconds) {
   return new Date(seconds * 1000).toLocaleTimeString([], {
@@ -34,7 +37,7 @@ function formatJobTitle(job) {
 function formatJobMeta(job) {
   const parts = [
     job.mediaType.toUpperCase(),
-    job.playlist ? "Playlist" : "Single video",
+    job.playlist ? "Playlist" : "Single item",
     prettyDate(job.createdAt),
   ];
 
@@ -45,6 +48,16 @@ function formatJobMeta(job) {
   return parts.join(" / ");
 }
 
+function looksLikePlaylist(urlValue) {
+  try {
+    const url = new URL(urlValue);
+    const path = url.pathname.toLowerCase().replace(/\/$/, "");
+    return path.endsWith("/playlist") || (url.searchParams.has("list") && !url.searchParams.has("v"));
+  } catch {
+    return false;
+  }
+}
+
 function renderJobs(jobs) {
   jobsEl.innerHTML = "";
 
@@ -53,7 +66,7 @@ function renderJobs(jobs) {
       <div class="empty">
         <div>
           <h3>No downloads yet</h3>
-          <p>Paste a video or playlist link to start a job.</p>
+          <p>Paste a YouTube or YouTube Music link to start a job.</p>
         </div>
       </div>
     `;
@@ -186,6 +199,7 @@ form.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload),
     });
     form.reset();
+    playlistTouched = false;
     outputDirInput.value = outputDirInput.placeholder;
     await refreshJobs();
   } catch (error) {
@@ -193,6 +207,16 @@ form.addEventListener("submit", async (event) => {
   } finally {
     submitButton.disabled = false;
   }
+});
+
+urlInput.addEventListener("input", () => {
+  if (!playlistTouched) {
+    playlistInput.checked = looksLikePlaylist(urlInput.value);
+  }
+});
+
+playlistInput.addEventListener("change", () => {
+  playlistTouched = true;
 });
 
 refreshButton.addEventListener("click", refreshJobs);

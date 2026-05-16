@@ -15,7 +15,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 APP_ROOT = Path(__file__).resolve().parent
@@ -137,6 +137,18 @@ def validate_url(value: str) -> str:
     return url
 
 
+def is_direct_playlist_url(url: str) -> bool:
+    parsed = urlparse(url)
+    path = parsed.path.rstrip("/").lower()
+    query = parse_qs(parsed.query)
+    return path.endswith("/playlist") or ("list" in query and "v" not in query)
+
+
+def describe_source_url(url: str) -> str:
+    host = urlparse(url).hostname or ""
+    return "YouTube Music" if host.lower() == "music.youtube.com" else "YouTube"
+
+
 def validate_media_type(value: str) -> str:
     media_type = value.strip().lower()
     if media_type not in {"mp3", "mp4"}:
@@ -224,13 +236,18 @@ def build_ydl_options(job: DownloadJob) -> dict[str, Any]:
             )
         options.update(
             {
-                "format": "bestaudio/best",
+                "format": "bestaudio[ext=m4a]/bestaudio/best",
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
                         "preferredcodec": "mp3",
                         "preferredquality": "0",
-                    }
+                    },
+                    {
+                        "key": "FFmpegMetadata",
+                        "add_metadata": True,
+                        "add_chapters": True,
+                    },
                 ],
             }
         )
@@ -239,6 +256,13 @@ def build_ydl_options(job: DownloadJob) -> dict[str, Any]:
             {
                 "format": "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/best",
                 "merge_output_format": "mp4",
+                "postprocessors": [
+                    {
+                        "key": "FFmpegMetadata",
+                        "add_metadata": True,
+                        "add_chapters": True,
+                    }
+                ],
             }
         )
 
@@ -316,6 +340,9 @@ def run_download(job_id: str) -> None:
     try:
         update_job(job_id, status="running", message="Starting download")
         add_log(job_id, f"Saving to {job.output_dir}")
+        add_log(job_id, f"Source: {describe_source_url(job.url)}")
+        if job.playlist:
+            add_log(job_id, "Playlist mode enabled.")
         Path(job.output_dir).mkdir(parents=True, exist_ok=True)
 
         try:
@@ -415,7 +442,7 @@ class AppHandler(SimpleHTTPRequestHandler):
             payload = self.read_json()
             url = validate_url(str(payload.get("url", "")))
             media_type = validate_media_type(str(payload.get("mediaType", "mp4")))
-            playlist = bool(payload.get("playlist", False))
+            playlist = bool(payload.get("playlist", False)) or is_direct_playlist_url(url)
             output_dir = resolve_output_dir(str(payload.get("outputDir", "")).strip())
 
             job_id = uuid.uuid4().hex[:12]
