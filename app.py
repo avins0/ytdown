@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -21,6 +23,7 @@ from urllib.parse import parse_qs, urlparse
 APP_ROOT = Path(__file__).resolve().parent
 STATIC_ROOT = APP_ROOT / "static"
 DEFAULT_DOWNLOAD_DIR = APP_ROOT / "downloads"
+DEFAULT_SPOTIFY_DOWNLOAD_DIR = DEFAULT_DOWNLOAD_DIR / "spotify"
 
 JOBS_LOCK = threading.RLock()
 JOBS: dict[str, "DownloadJob"] = {}
@@ -37,6 +40,7 @@ class DownloadJob:
     media_type: str
     playlist: bool
     output_dir: str
+    source: str = "youtube"
     status: str = "queued"
     title: str = ""
     progress: float = 0.0
@@ -46,6 +50,7 @@ class DownloadJob:
     message: str = "Waiting to start"
     error: str = ""
     cancel_requested: bool = False
+    process: subprocess.Popen[str] | None = field(default=None, repr=False, compare=False)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
     logs: list[str] = field(default_factory=list)
@@ -57,6 +62,7 @@ class DownloadJob:
             "mediaType": self.media_type,
             "playlist": self.playlist,
             "outputDir": self.output_dir,
+            "source": self.source,
             "status": self.status,
             "title": self.title,
             "progress": round(self.progress, 2),
@@ -126,6 +132,8 @@ def cancel_active_jobs(message: str) -> None:
             if job.status not in {"complete", "error", "cancelled"}:
                 job.cancel_requested = True
                 job.message = message
+                if job.process and job.process.poll() is None:
+                    job.process.terminate()
                 job.updated_at = time.time()
 
 
@@ -147,6 +155,31 @@ def is_direct_playlist_url(url: str) -> bool:
 def describe_source_url(url: str) -> str:
     host = urlparse(url).hostname or ""
     return "YouTube Music" if host.lower() == "music.youtube.com" else "YouTube"
+
+
+def parse_spotify_url(value: str) -> tuple[str, bool, str]:
+    url = validate_url(value)
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    parts = [part for part in parsed.path.split("/") if part]
+
+    if host == "spotify.link":
+        return url, False, "Spotify short link"
+
+    if host != "open.spotify.com" or len(parts) < 2:
+        raise ValueError("Enter a Spotify song or playlist link.")
+
+    kind = parts[0].lower()
+    if kind == "track":
+        return url, False, "Spotify song"
+    if kind == "playlist":
+        return url, True, "Spotify playlist"
+
+    raise ValueError("Enter a Spotify song or playlist link.")
+
+
+def strip_ansi(value: str) -> str:
+    return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", value).strip()
 
 
 def validate_media_type(value: str) -> str:
@@ -190,14 +223,26 @@ def dependency_status() -> dict[str, Any]:
     except Exception:
         yt_dlp_available = False
 
+    spotdl_available = True
+    spotdl_version = ""
+    try:
+        import spotdl
+
+        spotdl_version = getattr(spotdl, "__version__", "")
+    except Exception:
+        spotdl_available = False
+
     ffmpeg_path = resolve_ffmpeg()
     return {
         "python": sys.version.split()[0],
         "ytDlpAvailable": yt_dlp_available,
         "ytDlpVersion": yt_dlp_version,
+        "spotdlAvailable": spotdl_available,
+        "spotdlVersion": spotdl_version,
         "ffmpegAvailable": bool(ffmpeg_path),
         "ffmpegPath": ffmpeg_path or "",
         "defaultOutputDir": str(DEFAULT_DOWNLOAD_DIR),
+        "defaultSpotifyOutputDir": str(DEFAULT_SPOTIFY_DOWNLOAD_DIR),
     }
 
 
@@ -392,6 +437,123 @@ def run_download(job_id: str) -> None:
         traceback.print_exc()
 
 
+def run_spotify_download(job_id: str) -> None:
+    job = get_job(job_id)
+    if not job:
+        return
+
+    try:
+        try:
+            import spotdl  # noqa: F401
+        except ImportError as exc:
+            raise RuntimeError(
+                "spotDL is not installed. Run python -m pip install -r requirements.txt first."
+            ) from exc
+
+        ffmpeg_path = resolve_ffmpeg()
+        if not ffmpeg_path:
+            raise RuntimeError(
+                "Spotify MP3 downloads need FFmpeg. Run python -m pip install -r requirements.txt first."
+            )
+
+        output_dir = Path(job.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_template = str(output_dir / "{artists} - {title}.{output-ext}")
+
+        command = [
+            sys.executable,
+            "-m",
+            "spotdl",
+            "download",
+            job.url,
+            "--format",
+            "mp3",
+            "--output",
+            output_template,
+            "--overwrite",
+            "skip",
+            "--restrict",
+            "none",
+            "--print-errors",
+            "--audio",
+            "youtube-music",
+            "youtube",
+            "--ffmpeg",
+            ffmpeg_path,
+        ]
+
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["NO_COLOR"] = "1"
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+        update_job(job_id, status="running", title="Spotify MP3 download", message="Starting spotDL")
+        add_log(job_id, "Using Spotify metadata to find matching audio from YouTube/YouTube Music.")
+        add_log(job_id, f"Saving MP3 files to {job.output_dir}")
+
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            creationflags=creationflags,
+        )
+        update_job(job_id, process=process)
+
+        assert process.stdout is not None
+        for line in process.stdout:
+            clean_line = strip_ansi(line)
+            if clean_line:
+                add_log(job_id, clean_line)
+                update_job(job_id, message=clean_line[:140])
+
+        return_code = process.wait()
+        update_job(job_id, process=None)
+
+        latest = get_job(job_id)
+        if latest and latest.cancel_requested:
+            raise DownloadCancelled("Download cancelled.")
+
+        if return_code != 0:
+            raise RuntimeError(f"spotDL exited with code {return_code}. Check the job log for details.")
+
+        update_job(
+            job_id,
+            status="complete",
+            progress=100.0,
+            speed="",
+            eta="",
+            message="Complete",
+        )
+        add_log(job_id, "Spotify MP3 download complete.")
+    except DownloadCancelled:
+        update_job(
+            job_id,
+            status="cancelled",
+            process=None,
+            speed="",
+            eta="",
+            message="Cancelled",
+            error="",
+        )
+        add_log(job_id, "Spotify MP3 download cancelled.")
+    except Exception as exc:
+        update_job(
+            job_id,
+            status="error",
+            process=None,
+            speed="",
+            eta="",
+            message="Failed",
+            error=str(exc),
+        )
+        add_log(job_id, f"Failed: {exc}")
+        traceback.print_exc()
+
+
 class AppHandler(SimpleHTTPRequestHandler):
     server_version = "ytdown/1.0"
 
@@ -412,6 +574,10 @@ class AppHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         if self.path == "/api/download":
             self.create_download()
+            return
+
+        if self.path == "/api/spotify/download":
+            self.create_spotify_download()
             return
 
         if self.path == "/api/shutdown":
@@ -452,11 +618,43 @@ class AppHandler(SimpleHTTPRequestHandler):
                 media_type=media_type,
                 playlist=playlist,
                 output_dir=str(output_dir),
+                source=describe_source_url(url),
             )
             with JOBS_LOCK:
                 JOBS[job_id] = job
 
             thread = threading.Thread(target=run_download, args=(job_id,), daemon=True)
+            thread.start()
+            json_response(self, HTTPStatus.CREATED, {"job": job.to_dict()})
+        except ValueError as exc:
+            json_response(self, HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception as exc:
+            json_response(self, HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+
+    def create_spotify_download(self) -> None:
+        try:
+            payload = self.read_json()
+            url, playlist, label = parse_spotify_url(str(payload.get("url", "")))
+            output_dir = resolve_output_dir(
+                str(payload.get("outputDir", "")).strip()
+                or str(DEFAULT_SPOTIFY_DOWNLOAD_DIR)
+            )
+
+            job_id = uuid.uuid4().hex[:12]
+            job = DownloadJob(
+                id=job_id,
+                url=url,
+                media_type="mp3",
+                playlist=playlist,
+                output_dir=str(output_dir),
+                source="Spotify",
+                title=label,
+                message="Waiting to start spotDL",
+            )
+            with JOBS_LOCK:
+                JOBS[job_id] = job
+
+            thread = threading.Thread(target=run_spotify_download, args=(job_id,), daemon=True)
             thread.start()
             json_response(self, HTTPStatus.CREATED, {"job": job.to_dict()})
         except ValueError as exc:
@@ -477,6 +675,8 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return
             job.cancel_requested = True
             job.message = "Cancelling"
+            if job.process and job.process.poll() is None:
+                job.process.terminate()
             job.updated_at = time.time()
         json_response(self, HTTPStatus.OK, {"job": job.to_dict()})
 

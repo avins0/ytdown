@@ -1,6 +1,62 @@
+# Python environments and caches
 .venv/
+venv/
+env/
 __pycache__/
+*.py[cod]
+*$py.class
+__pypackages__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local configuration, credentials, and auth/session material
+.env
+.env.*
+*.env
+cookies.txt
+*.cookies
+*.cookies.txt
+*.cookie
+.spotify_cache
+.spotdl/
+*.spotdl
+*.token
+*.secret
+
+# Downloaded media and partial downloads
 downloads/
-server.log
-server.err
-*.pyc
+*.part
+*.ytdl
+*.mp3
+*.m4a
+*.mp4
+*.webm
+*.mkv
+*.flac
+*.ogg
+*.opus
+*.wav
+*.lrc
+*.m3u
+*.m3u8
+
+# Logs and runtime output
+*.log
+*.err
+*.tmp
+*.temp
+
+# Build/package artifacts
+build/
+dist/
+*.egg-info/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary review/scratch folders
+.codex-review/

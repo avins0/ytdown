@@ -5,12 +5,61 @@
   --text: #151a1f;
   --muted: #62707d;
   --line: #d8ded6;
+  --hover-line: #aeb9ac;
+  --input-bg: #fbfcfa;
+  --panel-bg: rgba(255, 255, 255, 0.9);
+  --health-bg: rgba(255, 255, 255, 0.72);
+  --notice-bg: #fff8e8;
+  --notice-text: #62450e;
+  --danger-bg: #fff4f2;
+  --danger-hover: #ffe8e5;
+  --soft-green-bg: #e5f4ec;
+  --soft-blue-bg: #e9f3fc;
+  --soft-red-bg: #fdecea;
+  --pill-bg: #e6ebef;
+  --pill-text: #45515c;
+  --dash-line: #bec8bd;
+  --toggle-off: #ccd4cc;
+  --code-bg: #12171c;
+  --code-text: #eaf0ea;
   --accent: #d73732;
   --accent-dark: #ad2622;
   --green: #2f8a5b;
   --amber: #9a6a13;
   --blue: #2c6a9f;
   --shadow: 0 20px 60px rgba(22, 28, 33, 0.12);
+}
+
+body[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101418;
+  --panel: #181e24;
+  --text: #eef3f6;
+  --muted: #a8b5be;
+  --line: #303a42;
+  --hover-line: #566470;
+  --input-bg: #121820;
+  --panel-bg: rgba(24, 30, 36, 0.94);
+  --health-bg: rgba(24, 30, 36, 0.9);
+  --notice-bg: #2b2416;
+  --notice-text: #f0ce85;
+  --danger-bg: #2b1718;
+  --danger-hover: #3a1d1f;
+  --soft-green-bg: #173124;
+  --soft-blue-bg: #16293a;
+  --soft-red-bg: #321b1d;
+  --pill-bg: #27313a;
+  --pill-text: #bac6ce;
+  --dash-line: #4b5862;
+  --toggle-off: #56636d;
+  --code-bg: #080b0f;
+  --code-text: #ecf3f6;
+  --accent: #ff6b61;
+  --accent-dark: #f04b42;
+  --green: #64c58f;
+  --amber: #d9a441;
+  --blue: #73b7ee;
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -28,6 +77,13 @@ body {
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+}
+
+body[data-theme="dark"] {
+  background:
+    linear-gradient(135deg, rgba(255, 107, 97, 0.12), transparent 32%),
+    linear-gradient(225deg, rgba(100, 197, 143, 0.1), transparent 36%),
+    var(--bg);
 }
 
 button,
@@ -95,7 +151,7 @@ h2 {
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--health-bg);
   color: var(--muted);
   font-size: 0.9rem;
   box-shadow: 0 6px 24px rgba(22, 28, 33, 0.07);
@@ -117,21 +173,49 @@ h2 {
   background: var(--amber);
 }
 
+.theme-toggle,
 .shutdown {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
   width: 38px;
   height: 38px;
+}
+
+.theme-toggle {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--muted);
+}
+
+.theme-toggle:hover {
+  border-color: var(--hover-line);
+  color: var(--text);
+}
+
+.theme-toggle .icon-sun {
+  display: none;
+}
+
+body[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+body[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+.shutdown {
   border: 1px solid rgba(215, 55, 50, 0.22);
   border-radius: 8px;
-  background: #fff4f2;
+  background: var(--danger-bg);
   color: var(--accent);
 }
 
 .shutdown:hover {
   border-color: rgba(215, 55, 50, 0.45);
-  background: #ffe8e5;
+  background: var(--danger-hover);
 }
 
 .shutdown:disabled {
@@ -147,11 +231,18 @@ h2 {
 }
 
 .download-panel,
-.jobs-panel {
+.jobs-panel,
+.spotify-panel {
   border: 1px solid rgba(216, 222, 214, 0.95);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--panel-bg);
   box-shadow: var(--shadow);
+}
+
+body[data-theme="dark"] .download-panel,
+body[data-theme="dark"] .jobs-panel,
+body[data-theme="dark"] .spotify-panel {
+  border-color: var(--line);
 }
 
 .download-panel {
@@ -162,6 +253,13 @@ h2 {
 
 .jobs-panel {
   min-height: 520px;
+  padding: 22px;
+}
+
+.spotify-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
   padding: 22px;
 }
 
@@ -178,7 +276,7 @@ h2 {
   min-height: 46px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfcfa;
+  background: var(--input-bg);
   color: var(--text);
   padding: 0 13px;
   outline: none;
@@ -229,7 +327,7 @@ h2 {
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfcfa;
+  background: var(--input-bg);
   color: var(--muted);
   font-weight: 800;
 }
@@ -261,7 +359,7 @@ h2 {
   width: 48px;
   height: 28px;
   border-radius: 999px;
-  background: #ccd4cc;
+  background: var(--toggle-off);
   transition: background 0.18s ease;
 }
 
@@ -289,14 +387,15 @@ h2 {
 .notice {
   border-left: 4px solid var(--amber);
   padding: 11px 12px;
-  background: #fff8e8;
-  color: #62450e;
+  background: var(--notice-bg);
+  color: var(--notice-text);
   font-size: 0.9rem;
   line-height: 1.45;
 }
 
 .primary,
-.ghost {
+.ghost,
+.secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -324,14 +423,14 @@ h2 {
 
 .ghost {
   width: 44px;
-  background: #fbfcfa;
+  background: var(--input-bg);
   color: var(--muted);
   border-color: var(--line);
 }
 
 .ghost:hover {
   color: var(--text);
-  border-color: #b9c3b7;
+  border-color: var(--hover-line);
 }
 
 .ghost.danger {
@@ -339,6 +438,81 @@ h2 {
   min-height: 36px;
   padding: 0 12px;
   color: var(--accent);
+}
+
+.secondary {
+  min-width: 104px;
+  padding: 0 14px;
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.secondary:hover {
+  border-color: var(--hover-line);
+}
+
+.secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.support-pill {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--soft-green-bg);
+  color: var(--green);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.spotify-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.9fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.spotify-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.spotify-download {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+
+.spotify-download:hover {
+  border-color: #267149;
+  background: #267149;
+}
+
+.spotify-result {
+  border-left: 4px solid var(--amber);
+  padding: 11px 12px;
+  background: var(--notice-bg);
+  color: var(--notice-text);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.spotify-result.ready {
+  border-left-color: var(--green);
+  background: var(--soft-green-bg);
+  color: var(--green);
+}
+
+.spotify-result.error {
+  border-left-color: var(--accent);
+  background: var(--danger-bg);
+  color: var(--accent-dark);
 }
 
 .panel-header,
@@ -361,7 +535,7 @@ h2 {
   display: grid;
   place-items: center;
   min-height: 390px;
-  border: 1px dashed #bec8bd;
+  border: 1px dashed var(--dash-line);
   border-radius: 8px;
   color: var(--muted);
   text-align: center;
@@ -380,7 +554,7 @@ h2 {
 .shutdown-banner {
   border: 1px solid #f1b7b2;
   border-radius: 8px;
-  background: #fff4f2;
+  background: var(--danger-bg);
   color: var(--accent-dark);
   padding: 13px 14px;
   font-weight: 800;
@@ -391,7 +565,7 @@ h2 {
   gap: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfcfa;
+  background: var(--input-bg);
   padding: 16px;
 }
 
@@ -413,8 +587,8 @@ h2 {
   flex: 0 0 auto;
   border-radius: 999px;
   padding: 5px 10px;
-  background: #e6ebef;
-  color: #45515c;
+  background: var(--pill-bg);
+  color: var(--pill-text);
   font-size: 0.76rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -422,18 +596,18 @@ h2 {
 }
 
 .status-pill.running {
-  background: #e9f3fc;
+  background: var(--soft-blue-bg);
   color: var(--blue);
 }
 
 .status-pill.complete {
-  background: #e5f4ec;
+  background: var(--soft-green-bg);
   color: var(--green);
 }
 
 .status-pill.error,
 .status-pill.cancelled {
-  background: #fdecea;
+  background: var(--soft-red-bg);
   color: var(--accent);
 }
 
@@ -441,7 +615,7 @@ h2 {
   height: 10px;
   overflow: hidden;
   border-radius: 999px;
-  background: #e3e8e2;
+  background: var(--line);
 }
 
 .progress-bar {
@@ -474,8 +648,8 @@ h2 {
   overflow: auto;
   margin: 10px 0 0;
   border-radius: 8px;
-  background: #12171c;
-  color: #eaf0ea;
+  background: var(--code-bg);
+  color: var(--code-text);
   padding: 12px;
   font-size: 0.78rem;
   line-height: 1.5;
@@ -515,6 +689,18 @@ h2 {
 
   .control-row {
     grid-template-columns: 1fr;
+  }
+
+  .spotify-form {
+    grid-template-columns: 1fr;
+  }
+
+  .spotify-actions {
+    justify-content: stretch;
+  }
+
+  .spotify-actions .secondary {
+    flex: 1 1 120px;
   }
 
   .toggle {

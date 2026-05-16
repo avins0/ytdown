@@ -35,6 +35,10 @@ The launcher opens the page automatically. The power button in the page shuts do
 
 The default output folder is `downloads` inside this project. You can also enter an absolute Windows folder path in the UI.
 
+## Spotify Links
+
+The Spotify area accepts song and playlist links and uses `spotdl` to save MP3 files with metadata. It does not download Spotify's protected audio stream; spotDL uses Spotify metadata to find matching audio from YouTube or YouTube Music. Only save music you own or have permission to keep locally.
+
 ## Notes
 
 - YouTube Music song and playlist links are supported, including `music.youtube.com/watch` and `music.youtube.com/playlist`.

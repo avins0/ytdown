@@ -18,6 +18,14 @@
             <span class="health-dot" aria-hidden="true"></span>
             <span>Checking tools</span>
           </div>
+          <button class="theme-toggle" id="theme-toggle" type="button" title="Switch to dark mode" aria-label="Switch to dark mode">
+            <svg class="icon-moon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M21 14.7A7.8 7.8 0 0 1 9.3 3a9 9 0 1 0 11.7 11.7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg class="icon-sun" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 4V2m0 20v-2m8-8h2M2 12h2m14.4-6.4 1.4-1.4M4.2 19.8l1.4-1.4m0-12.8L4.2 4.2m15.6 15.6-1.4-1.4M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
           <button class="shutdown" id="shutdown" type="button" title="Shutdown server" aria-label="Shutdown server">
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M12 2v10M6.3 6.8a8 8 0 1 0 11.4 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -96,6 +104,42 @@
             </div>
           </div>
         </section>
+      </section>
+
+      <section class="spotify-panel" aria-label="Spotify links">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Spotify</p>
+            <h2>Song and playlist links</h2>
+          </div>
+          <span class="support-pill">MP3 via spotDL</span>
+        </div>
+
+        <form class="spotify-form" id="spotify-form">
+          <label class="field">
+            <span>Spotify song or playlist link</span>
+            <input
+              id="spotify-url"
+              name="spotifyUrl"
+              type="url"
+              placeholder="https://open.spotify.com/track/..."
+              autocomplete="off"
+            >
+          </label>
+          <label class="field">
+            <span>Spotify output folder</span>
+            <input id="spotify-output-dir" name="spotifyOutputDir" type="text" autocomplete="off">
+          </label>
+          <div class="spotify-actions">
+            <button class="secondary spotify-download" type="submit">Download MP3</button>
+            <button class="secondary" id="spotify-open" type="button" disabled>Open</button>
+            <button class="secondary" id="spotify-copy" type="button" disabled>Copy</button>
+          </div>
+        </form>
+
+        <div class="spotify-result" id="spotify-result">
+          Spotify links use spotDL to find matching audio from YouTube or YouTube Music and save MP3 files with metadata. Only save music you own or have permission to keep locally.
+        </div>
       </section>
     </main>
 
